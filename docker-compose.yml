@@ -1,0 +1,23 @@
+# Dependências opcionais para desenvolvimento local.
+# Se você já tem Postgres nativo (ex.: postgres/123456) ou Redis no host/VPS,
+# não precisa subir estes serviços — ajuste só DATABASE_URL / REDIS_URL no .env.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-qrapi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-qrapi}
+      POSTGRES_DB: ${POSTGRES_DB:-qrapi}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - qrapi_pg_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+
+volumes:
+  qrapi_pg_data:

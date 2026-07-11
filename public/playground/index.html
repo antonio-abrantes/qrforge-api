@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QRForge Playground</title>
+    <link rel="icon" href="/assets/ico.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/playground/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <img
+          class="brand-logo"
+          src="/assets/logo.svg"
+          alt="QRForge"
+          width="280"
+          height="88"
+        />
+        <h1>Playground</h1>
+        <p class="lede">
+          Gere QR codes customizáveis, teste estilos e copie o cURL equivalente para integrar na sua stack.
+        </p>
+      </header>
+
+      <section class="panel">
+        <label>
+          Base URL
+          <div class="row">
+            <input id="baseUrl" type="text" />
+            <span id="autoBadge" class="badge">detectado automaticamente</span>
+          </div>
+        </label>
+
+        <label>
+          API Key (X-API-Key)
+          <input id="apiKey" type="password" placeholder="cole sua chave aqui" autocomplete="off" />
+        </label>
+
+        <label>
+          Data
+          <textarea id="data" rows="3">https://tonilabs.space</textarea>
+        </label>
+
+        <div class="grid">
+          <label>
+            Size
+            <input id="size" type="number" value="400" min="64" max="4096" />
+          </label>
+          <label>
+            Margin
+            <input id="margin" type="number" value="2" min="0" max="100" />
+          </label>
+          <label>
+            EC Level
+            <select id="ec">
+              <option>L</option>
+              <option>M</option>
+              <option selected>Q</option>
+              <option>H</option>
+            </select>
+          </label>
+          <label>
+            Format
+            <select id="format">
+              <option value="png" selected>png</option>
+              <option value="jpg">jpg</option>
+              <option value="svg">svg</option>
+              <option value="ascii">ascii</option>
+              <option value="unicode">unicode</option>
+            </select>
+          </label>
+          <label>
+            Response
+            <select id="response">
+              <option value="binary" selected>binary</option>
+              <option value="base64">base64</option>
+              <option value="dataurl">dataurl</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="grid">
+          <label>
+            Dots shape
+            <select id="dotShape">
+              <option>square</option>
+              <option selected>rounded</option>
+              <option>extra-rounded</option>
+              <option>classy</option>
+              <option>classy-rounded</option>
+              <option>dots</option>
+            </select>
+          </label>
+          <label class="color-field">
+            Dots color
+            <div class="color-row">
+              <input id="dotColor" class="color-swatch" type="color" value="#111111" />
+              <input
+                id="dotColorHex"
+                class="color-hex"
+                type="text"
+                value="#111111"
+                maxlength="7"
+                spellcheck="false"
+                aria-label="Dots color hex"
+              />
+            </div>
+          </label>
+          <label>
+            Corner squares
+            <select id="csShape">
+              <option>square</option>
+              <option>rounded</option>
+              <option selected>extra-rounded</option>
+              <option>dot</option>
+            </select>
+          </label>
+          <label class="color-field">
+            Corner squares color
+            <div class="color-row">
+              <input id="csColor" class="color-swatch" type="color" value="#2563eb" />
+              <input
+                id="csColorHex"
+                class="color-hex"
+                type="text"
+                value="#2563eb"
+                maxlength="7"
+                spellcheck="false"
+                aria-label="Corner squares color hex"
+              />
+            </div>
+          </label>
+          <label>
+            Corner dots
+            <select id="cdShape">
+              <option>square</option>
+              <option>rounded</option>
+              <option selected>dot</option>
+            </select>
+          </label>
+          <label class="color-field">
+            Corner dots color
+            <div class="color-row">
+              <input id="cdColor" class="color-swatch" type="color" value="#2563eb" />
+              <input
+                id="cdColorHex"
+                class="color-hex"
+                type="text"
+                value="#2563eb"
+                maxlength="7"
+                spellcheck="false"
+                aria-label="Corner dots color hex"
+              />
+            </div>
+          </label>
+          <label class="color-field">
+            Background
+            <div class="color-row">
+              <input id="bgColor" class="color-swatch" type="color" value="#ffffff" />
+              <input
+                id="bgColorHex"
+                class="color-hex"
+                type="text"
+                value="#ffffff"
+                maxlength="7"
+                spellcheck="false"
+                aria-label="Background color hex"
+              />
+            </div>
+          </label>
+          <label>
+            Logo URL (opcional)
+            <input id="logoUrl" type="url" placeholder="https://..." />
+          </label>
+        </div>
+
+        <div class="actions">
+          <button id="generate" type="button">Gerar QR</button>
+          <button id="copyCurl" type="button" class="ghost">Copiar cURL</button>
+          <button id="randomize" type="button" class="ghost">Randomizar estilo</button>
+        </div>
+
+        <p id="status" class="status" hidden></p>
+      </section>
+
+      <section class="preview panel">
+        <h2>Preview</h2>
+        <div id="preview" class="preview-box"></div>
+      </section>
+    </main>
+    <script src="/playground/app.js"></script>
+  </body>
+</html>

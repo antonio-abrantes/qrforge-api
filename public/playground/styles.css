@@ -1,0 +1,251 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
+
+:root {
+  --bg0: #dfe6ee;
+  --bg1: #f0f3f7;
+  --panel: #ffffff;
+  --ink: #1b2430;
+  --muted: #5a6a7c;
+  --accent: #e07830;
+  --accent-soft: #ffe8d4;
+  --line: rgba(27, 36, 48, 0.14);
+  --danger: #b91c1c;
+  --swatch-border: rgba(27, 36, 48, 0.22);
+  --radius-panel: 6px;
+  --radius-control: 4px;
+  --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: var(--font-body);
+  background:
+    radial-gradient(900px 480px at 8% -8%, rgba(224, 120, 48, 0.16), transparent 55%),
+    radial-gradient(700px 420px at 100% 0%, rgba(40, 41, 43, 0.06), transparent 50%),
+    linear-gradient(165deg, var(--bg0), var(--bg1));
+}
+
+.shell {
+  width: min(1100px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 2.5rem 0 4rem;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.hero .brand-logo {
+  display: block;
+  width: min(280px, 72vw);
+  height: auto;
+  margin: 0;
+}
+
+.hero h1 {
+  margin: 0.55rem 0 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.lede {
+  margin: 0.75rem 0 0;
+  max-width: 40rem;
+  color: var(--muted);
+}
+
+.panel {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: 0 10px 28px rgba(27, 36, 48, 0.06);
+  padding: 1.25rem;
+  display: grid;
+  gap: 0.9rem;
+  border-radius: var(--radius-panel);
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #f7f9fb;
+  color: var(--ink);
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-control);
+  color-scheme: light;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid rgba(224, 120, 48, 0.35);
+  outline-offset: 1px;
+  border-color: rgba(224, 120, 48, 0.45);
+}
+
+/* Native dropdown options: force readable contrast on Windows/Chrome */
+select option,
+select optgroup {
+  background-color: #ffffff;
+  color: #1b2430;
+}
+
+.row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.badge {
+  white-space: nowrap;
+  font-size: 0.7rem;
+  border: 1px solid rgba(224, 120, 48, 0.4);
+  background: var(--accent-soft);
+  color: #9a4a12;
+  padding: 0.35rem 0.55rem;
+  border-radius: var(--radius-control);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.color-field .color-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Visible 40×40 swatch that shows the selected color */
+input[type="color"].color-swatch {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  padding: 0;
+  border: 1px solid var(--swatch-border);
+  border-radius: var(--radius-control);
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+input[type="color"].color-swatch::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+input[type="color"].color-swatch::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+
+input[type="color"].color-swatch::-moz-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+
+input.color-hex {
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+button {
+  border: 0;
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 600;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  border-radius: var(--radius-control);
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.status {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.status.ok {
+  color: var(--accent);
+}
+
+.preview h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.preview-box {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-control);
+  padding: 1rem;
+  background: #f7f9fb;
+}
+
+.preview-box img,
+.preview-box object {
+  max-width: 100%;
+  height: auto;
+}
+
+.preview-box pre {
+  margin: 0;
+  white-space: pre;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  line-height: 1.1;
+  overflow: auto;
+  max-width: 100%;
+}
