@@ -46,6 +46,14 @@ export function parseDatabaseUrl(databaseUrl: string): ParsedDatabaseUrl {
   if (!host) {
     throw new Error('Invalid DATABASE_URL: missing host.')
   }
+  // Broken Compose nested ${} often produces names like "qrapi@host:5432/qrapi}".
+  if (/[@/:{}]/.test(targetDb)) {
+    throw new Error(
+      `Invalid DATABASE_URL: database name looks corrupted ("${targetDb}"). ` +
+        `Do not nest \${} inside another \${} in stack.yml. ` +
+        `Use: DATABASE_URL: postgres://qrapi:\${QRAPI_DB_PASSWORD}@qrapi-postgres:5432/qrapi`,
+    )
+  }
 
   return { targetDb, user: user || 'postgres', host, connectionString: trimmed }
 }

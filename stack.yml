@@ -17,19 +17,24 @@ version: "3.9"
 
 services:
   qrapi:
-    image: ghcr.io/<seu-usuario>/qrforge:latest
+    image: ghcr.io/antonio-abrantes/qrforge:latest
     environment:
       NODE_ENV: production
       PORT: 3000
       HOST: 0.0.0.0
-      # Same password var as qrapi-postgres. Override with full URL only for external Postgres.
-      DATABASE_URL: ${QRAPI_DATABASE_URL:-postgres://qrapi:${QRAPI_DB_PASSWORD}@qrapi-postgres:5432/qrapi}
-      # Official image with POSTGRES_USER=qrapi does not create a "postgres" database.
-      POSTGRES_MAINTENANCE_DB: ${QRAPI_DB_NAME:-qrapi}
-      REDIS_URL: ${QRAPI_REDIS_URL:-redis://qrapi-redis:6379}
+      DATABASE_URL: ${QRAPI_DATABASE_URL}
+      POSTGRES_MAINTENANCE_DB: ${QRAPI_DB_NAME}
+      REDIS_URL: ${QRAPI_REDIS_URL}
       ADMIN_API_KEY: ${QRAPI_ADMIN_API_KEY}
-      CORS_ORIGIN: ${QRAPI_CORS_ORIGIN:-https://qrapi.tonilabs.space}
-      LOG_LEVEL: ${QRAPI_LOG_LEVEL:-info}
+      CORS_ORIGIN: ${QRAPI_CORS_ORIGIN}
+      LOG_LEVEL: ${QRAPI_LOG_LEVEL}
+      RATE_LIMIT_MAX: ${QRAPI_RATE_LIMIT_MAX}
+      RATE_LIMIT_TIME_WINDOW_MS: ${QRAPI_RATE_LIMIT_TIME_WINDOW_MS}
+      BATCH_MAX_ITEMS: ${QRAPI_BATCH_MAX_ITEMS}
+      BATCH_BASE64_MAX_ITEMS: ${QRAPI_BATCH_BASE64_MAX_ITEMS}
+      CACHE_TTL_SECONDS: ${QRAPI_CACHE_TTL_SECONDS}
+      IMAGE_FETCH_TIMEOUT_MS: ${QRAPI_IMAGE_FETCH_TIMEOUT_MS}
+      IMAGE_FETCH_MAX_BYTES: ${QRAPI_IMAGE_FETCH_MAX_BYTES}
     networks:
       - network_public
       - qrapi_internal
@@ -43,7 +48,7 @@ services:
       labels:
         - traefik.enable=true
         - traefik.docker.network=network_public
-        - traefik.http.routers.qrapi.rule=Host(`qrapi.tonilabs.space`)
+        - traefik.http.routers.qrapi.rule=Host(`${QRAPI_PUBLIC_HOST}`)
         - traefik.http.routers.qrapi.entrypoints=websecure
         - traefik.http.routers.qrapi.tls.certresolver=letsencryptresolver
         - traefik.http.services.qrapi.loadbalancer.server.port=3000
@@ -51,9 +56,9 @@ services:
   qrapi-postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${QRAPI_DB_USER:-qrapi}
-      POSTGRES_PASSWORD: ${QRAPI_DB_PASSWORD:?QRAPI_DB_PASSWORD is required}
-      POSTGRES_DB: ${QRAPI_DB_NAME:-qrapi}
+      POSTGRES_USER: ${QRAPI_DB_USER}
+      POSTGRES_PASSWORD: ${QRAPI_DB_PASSWORD}
+      POSTGRES_DB: ${QRAPI_DB_NAME}
     networks:
       - qrapi_internal
     volumes:
