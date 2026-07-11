@@ -7,37 +7,85 @@ function quoteIdent(name: string): string {
   return `"${name.replace(/"/g, '""')}"`
 }
 
-function parseDatabaseUrl(databaseUrl: string): {
+export type ParsedDatabaseUrl = {
   targetDb: string
-  maintenanceUrl: string
-} {
-  let url: URL
-  try {
-    url = new URL(databaseUrl)
-  } catch {
+  user: string
+  host: string
+  /** Original URL unchanged (password preserved). */
+  connectionString: string
+}
+
+/**
+ * Parse DATABASE_URL without going through URL.toString() rewrites that can
+ * corrupt passwords with reserved characters (#, @, :, %, etc.).
+ */
+export function parseDatabaseUrl(databaseUrl: string): ParsedDatabaseUrl {
+  const trimmed = databaseUrl.trim()
+  if (!trimmed) {
+    throw new Error('DATABASE_URL is required to ensure the database exists.')
+  }
+
+  // postgres[ql]://[user[:password]@]host[:port]/db][?params]
+  const match = trimmed.match(
+    /^(postgres(?:ql)?):\/\/(?:([^:@/?#]*)(?::([^@/?#]*))?@)?([^:/?#]+)(?::(\d+))?\/([^?#]*)/i,
+  )
+  if (!match) {
     throw new Error(
       `Invalid DATABASE_URL: could not parse connection string. Expected e.g. postgres://user:pass@host:5432/dbname`,
     )
   }
 
-  const targetDb = decodeURIComponent(url.pathname.replace(/^\//, '')).trim()
+  const user = decodeURIComponent(match[2] ?? '')
+  const host = match[4] ?? ''
+  const targetDb = decodeURIComponent((match[6] ?? '').replace(/^\//, '').trim())
   if (!targetDb) {
     throw new Error(
       'Invalid DATABASE_URL: missing database name in the path (e.g. .../qrapi).',
     )
   }
+  if (!host) {
+    throw new Error('Invalid DATABASE_URL: missing host.')
+  }
 
-  const maintenanceDb = process.env.POSTGRES_MAINTENANCE_DB?.trim() || 'postgres'
-  const maintenanceUrl = new URL(databaseUrl)
-  maintenanceUrl.pathname = `/${encodeURIComponent(maintenanceDb)}`
+  return { targetDb, user: user || 'postgres', host, connectionString: trimmed }
+}
 
-  return { targetDb, maintenanceUrl: maintenanceUrl.toString() }
+/** Swap only the database name in the path; leave user/password/host intact. */
+export function withDatabaseName(databaseUrl: string, dbName: string): string {
+  const qIndex = databaseUrl.indexOf('?')
+  const base = qIndex >= 0 ? databaseUrl.slice(0, qIndex) : databaseUrl
+  const query = qIndex >= 0 ? databaseUrl.slice(qIndex) : ''
+  const schemeSep = base.indexOf('://')
+  if (schemeSep < 0) {
+    throw new Error('Invalid DATABASE_URL: missing scheme.')
+  }
+  const pathStart = base.indexOf('/', schemeSep + 3)
+  if (pathStart < 0) {
+    return `${base}/${encodeURIComponent(dbName)}${query}`
+  }
+  return `${base.slice(0, pathStart)}/${encodeURIComponent(dbName)}${query}`
+}
+
+function pgErrCode(err: unknown): string {
+  if (!err || typeof err !== 'object') return ''
+  return 'code' in err ? String(err.code) : ''
+}
+
+function isDatabaseMissing(err: unknown): boolean {
+  const code = pgErrCode(err)
+  const message = err instanceof Error ? err.message : String(err)
+  return code === '3D000' || /database ".*" does not exist/i.test(message)
+}
+
+function isPasswordAuthFailed(err: unknown): boolean {
+  const code = pgErrCode(err)
+  const message = err instanceof Error ? err.message : String(err)
+  return code === '28P01' || /password authentication failed/i.test(message)
 }
 
 function isInsufficientPrivilege(err: unknown): boolean {
-  if (!err || typeof err !== 'object') return false
-  const code = 'code' in err ? String(err.code) : ''
-  const message = 'message' in err ? String(err.message) : ''
+  const code = pgErrCode(err)
+  const message = err instanceof Error ? err.message : String(err)
   return (
     code === '42501' ||
     /permission denied to create database/i.test(message) ||
@@ -45,26 +93,63 @@ function isInsufficientPrivilege(err: unknown): boolean {
   )
 }
 
+async function tryConnect(connectionString: string): Promise<void> {
+  const client = new Client({ connectionString })
+  try {
+    await client.connect()
+  } finally {
+    await client.end().catch(() => undefined)
+  }
+}
+
 /**
  * Ensures the database named in DATABASE_URL exists.
- * Connects to the maintenance DB (default `postgres`) and runs CREATE DATABASE if needed.
- * Idempotent: safe when the DB already exists (e.g. Docker POSTGRES_DB).
+ *
+ * Order matters for Docker images with POSTGRES_USER/POSTGRES_DB != postgres:
+ * 1) Try the target DB first (already created by the image).
+ * 2) Only if it is missing, connect to a maintenance DB and CREATE DATABASE.
+ *
+ * Never rewrites the URL via `new URL().toString()` (that can corrupt passwords).
  */
 export async function ensureDatabaseExists(
   databaseUrl: string = process.env.DATABASE_URL ?? '',
 ): Promise<void> {
-  if (!databaseUrl.trim()) {
-    throw new Error('DATABASE_URL is required to ensure the database exists.')
-  }
+  const { targetDb, user, host, connectionString } = parseDatabaseUrl(databaseUrl)
+  console.log(
+    `Ensuring database exists (host=${host}, user=${user}, database=${targetDb})...`,
+  )
 
-  const { targetDb, maintenanceUrl } = parseDatabaseUrl(databaseUrl)
-
-  if (targetDb === (process.env.POSTGRES_MAINTENANCE_DB?.trim() || 'postgres')) {
-    console.log(
-      `Database "${targetDb}" is the maintenance DB; skipping CREATE DATABASE.`,
-    )
+  // 1) Happy path: target DB already exists (typical Docker POSTGRES_DB=qrapi).
+  try {
+    await tryConnect(connectionString)
+    console.log(`Database "${targetDb}" already reachable.`)
     return
+  } catch (err) {
+    if (isPasswordAuthFailed(err)) {
+      throw new Error(
+        `PostgreSQL password authentication failed for user "${user}" at host "${host}". ` +
+          `The password in DATABASE_URL must match POSTGRES_PASSWORD (or the role password on an external server). ` +
+          `Note: POSTGRES_PASSWORD is only applied when the data volume is first created — ` +
+          `changing it later does not update an existing volume.`,
+        { cause: err },
+      )
+    }
+    if (!isDatabaseMissing(err)) {
+      throw err
+    }
+    console.log(`Database "${targetDb}" does not exist yet; will try to create it.`)
   }
+
+  const maintenanceDb = process.env.POSTGRES_MAINTENANCE_DB?.trim() || 'postgres'
+  if (maintenanceDb === targetDb) {
+    throw new Error(
+      `Database "${targetDb}" does not exist, and POSTGRES_MAINTENANCE_DB is the same name — ` +
+        `cannot CREATE DATABASE. Create it manually or set POSTGRES_DB in the Postgres service.`,
+    )
+  }
+
+  const maintenanceUrl = withDatabaseName(connectionString, maintenanceDb)
+  console.log(`Connecting to maintenance database "${maintenanceDb}" to create "${targetDb}"...`)
 
   const client = new Client({ connectionString: maintenanceUrl })
   try {
@@ -84,6 +169,24 @@ export async function ensureDatabaseExists(
     await client.query(`CREATE DATABASE ${quoteIdent(targetDb)}`)
     console.log(`Database "${targetDb}" created.`)
   } catch (err) {
+    if (isPasswordAuthFailed(err)) {
+      throw new Error(
+        `PostgreSQL password authentication failed for user "${user}" while connecting to ` +
+          `maintenance database "${maintenanceDb}" on host "${host}". ` +
+          `For Docker Postgres with POSTGRES_USER/POSTGRES_DB set to your app user, set ` +
+          `POSTGRES_MAINTENANCE_DB to that same database name, or ensure DATABASE_URL password ` +
+          `matches POSTGRES_PASSWORD.`,
+        { cause: err },
+      )
+    }
+    if (isDatabaseMissing(err)) {
+      throw new Error(
+        `Maintenance database "${maintenanceDb}" does not exist on host "${host}". ` +
+          `Docker images with POSTGRES_USER != postgres often have no "postgres" database. ` +
+          `Set POSTGRES_MAINTENANCE_DB=${targetDb} (and rely on POSTGRES_DB), or create the DB manually.`,
+        { cause: err },
+      )
+    }
     if (isInsufficientPrivilege(err)) {
       throw new Error(
         `Cannot create database "${targetDb}": the database role lacks CREATEDB privilege. ` +

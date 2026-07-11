@@ -22,8 +22,10 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOST: 0.0.0.0
-      # Prefer QRAPI_DATABASE_URL; fallback = Postgres interno do stack
+      # Same password var as qrapi-postgres. Override with full URL only for external Postgres.
       DATABASE_URL: ${QRAPI_DATABASE_URL:-postgres://qrapi:${QRAPI_DB_PASSWORD}@qrapi-postgres:5432/qrapi}
+      # Official image with POSTGRES_USER=qrapi does not create a "postgres" database.
+      POSTGRES_MAINTENANCE_DB: ${QRAPI_DB_NAME:-qrapi}
       REDIS_URL: ${QRAPI_REDIS_URL:-redis://qrapi-redis:6379}
       ADMIN_API_KEY: ${QRAPI_ADMIN_API_KEY}
       CORS_ORIGIN: ${QRAPI_CORS_ORIGIN:-https://qrapi.tonilabs.space}
@@ -35,6 +37,9 @@ services:
       replicas: 1
       placement:
         constraints: [node.role == manager]
+      restart_policy:
+        condition: on-failure
+        delay: 5s
       labels:
         - traefik.enable=true
         - traefik.docker.network=network_public
@@ -43,22 +48,27 @@ services:
         - traefik.http.routers.qrapi.tls.certresolver=letsencryptresolver
         - traefik.http.services.qrapi.loadbalancer.server.port=3000
 
-  # Opcional quando DATABASE_URL aponta para Postgres externo.
-  # Mantenha no stack para quem quiser all-in-one; ignore se usar DB externo.
-  # POSTGRES_DB já cria o database no primeiro boot — o migrate só aplica schema.
   qrapi-postgres:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: ${QRAPI_DB_USER:-qrapi}
-      POSTGRES_PASSWORD: ${QRAPI_DB_PASSWORD}
+      POSTGRES_PASSWORD: ${QRAPI_DB_PASSWORD:?QRAPI_DB_PASSWORD is required}
       POSTGRES_DB: ${QRAPI_DB_NAME:-qrapi}
     networks:
       - qrapi_internal
     volumes:
       - qrapi_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     deploy:
       placement:
         constraints: [node.role == manager]
+      restart_policy:
+        condition: on-failure
 
   qrapi-redis:
     image: redis:7-alpine
