@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/assets/logo.svg" alt="QRForge" width="320" />
+</p>
+
 # QRForge
 
 HTTP API for **customizable QR code generation** — ready to plug into apps, automations (n8n), backends, and frontends.
