@@ -1,6 +1,6 @@
 {
   "name": "qrforge",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "QRForge — HTTP API for customizable QR code generation (styles, templates, batch, playground)",
   "type": "module",
   "engines": {

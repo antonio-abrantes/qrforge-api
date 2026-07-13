@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import cors from '@fastify/cors'
@@ -21,6 +22,19 @@ import { qrcodeRoutes } from './routes/qrcodes.js'
 import { userRoutes } from './routes/users.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+
+function readPackageVersion(): string {
+  try {
+    const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8')) as {
+      version?: string
+    }
+    return typeof pkg.version === 'string' ? pkg.version : '0.0.0'
+  } catch {
+    return '0.0.0'
+  }
+}
+
+const PACKAGE_VERSION = readPackageVersion()
 
 const HIDDEN_PATHS = new Set([
   '/',
@@ -72,7 +86,7 @@ export async function buildApp() {
           '',
           '**Playground:** interactive UI at `/playground` (not part of this OpenAPI).',
         ].join('\n'),
-        version: '1.0.0',
+        version: PACKAGE_VERSION,
       },
       // Relative URL → Swagger UI uses whatever host served /docs
       servers: [
@@ -210,7 +224,7 @@ export async function buildApp() {
     const base = `${proto}://${host}`
     return {
       name: 'QRForge',
-      version: '1.0.0',
+      version: PACKAGE_VERSION,
       description:
         'HTTP API for customizable QR code generation with styles, templates, batch, and playground.',
       author: 'Antônio Abrantes',

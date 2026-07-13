@@ -56,10 +56,31 @@ Copy-paste examples: [docs/CURLS.md](docs/CURLS.md).
 - Fastify 5 + Zod · Drizzle + PostgreSQL · BullMQ + Redis
 - `qrcode-generator` · `@resvg/resvg-js` · `sharp` (JPG)
 
+## AI agent integration guides
+
+Two companion docs map **every current endpoint**, required/optional parameters, defaults, auth, and examples — so another AI agent (or a developer) can implement QRForge clients without reading the whole codebase.
+
+| File | Format | When to use |
+|---|---|---|
+| [docs/qrforge-usage-guide/SKILL.md](docs/qrforge-usage-guide/SKILL.md) | Cursor **Agent Skill** | Environments that load skills (e.g. Cursor). Auto-discovered via description; keeps a short decision tree + StyleConfig cheat sheet in context, then points to the full guide. |
+| [docs/qrforge-usage-guide/USAGE_GUIDE.md](docs/qrforge-usage-guide/USAGE_GUIDE.md) | Standalone Markdown | Any environment that **cannot** use skills (ChatGPT, Claude Projects, n8n AI nodes, custom agents, human onboarding). Self-contained Triggo-style reference — fill Base URL / API key and hand the file over. |
+
+### Use cases
+
+- **“Implement create QR with logo and custom colors”** — agent picks `POST /v1/qrcodes`, maps `image`, `dots`, `cornerSquares`, `cornerDots`, `background`, `format`, `response`.
+- **Structured payloads** (Wi‑Fi, vCard, email, SMS, event…) — `POST /v1/qrcodes/from-template` + `templateData` tables.
+- **Batch generation** (menus, seats, labels) — enqueue → poll status → download ZIP/JSON.
+- **Reuse look & feel** — presets / random style, then merge into create.
+- **Provision tenant keys** — admin-only `/v1/users*` flow documented end-to-end.
+
+Prefer the **skill** when the agent runtime supports it (progressive disclosure, less token waste). Prefer the **usage guide** when you need a single pasteable document.
+
 ## Documentation
 
 | Doc | Contents |
 |---|---|
+| [docs/qrforge-usage-guide/USAGE_GUIDE.md](docs/qrforge-usage-guide/USAGE_GUIDE.md) | Full API usage guide for agents & integrators |
+| [docs/qrforge-usage-guide/SKILL.md](docs/qrforge-usage-guide/SKILL.md) | Cursor skill for QRForge integration |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture and pipeline |
 | [docs/API.md](docs/API.md) | Endpoints and contracts |
 | [docs/CURLS.md](docs/CURLS.md) | cURLs for testing |

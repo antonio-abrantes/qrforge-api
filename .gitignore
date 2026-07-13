@@ -11,4 +11,8 @@ uploads/
 .idea/
 .vscode/
 *.tsbuildinfo
-/docs
+
+# Ignore all of docs/ except the AI usage guide (skill + standalone guide)
+/docs/*
+!/docs/qrforge-usage-guide/
+!/docs/qrforge-usage-guide/**
